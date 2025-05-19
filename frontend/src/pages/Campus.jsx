@@ -37,10 +37,15 @@ function CampusPage() {
   // 3️⃣ Re-filter on apartments, searchTerm, or filters change
 
 
+  //testing git to see howthis works
+
   if (!campus) return <p>Loading campus…</p>;
 
   return (
+
+    // Im editing some page functionality here
     <div>
+      
       <h1>{campus.name}</h1>
       <p>
         Apartments: {campus.apt_count} | 
