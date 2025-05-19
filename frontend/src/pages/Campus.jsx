@@ -40,6 +40,8 @@ function CampusPage() {
   if (!campus) return <p>Loading campus…</p>;
 
   return (
+
+    // Im editing some page functionality here
     <div>
       <h1>{campus.name}</h1>
       <p>
