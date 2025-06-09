@@ -50,6 +50,9 @@ function CampusPage() {
       <div>
         This works
       </div>
+      <div>
+        SOme me work
+      </div>
       
       <h1>{campus.name}</h1>
       <p>
