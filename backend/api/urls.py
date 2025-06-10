@@ -4,9 +4,9 @@ from .views import *
 urlpatterns = [
     path('campuses/', CampusListView.as_view()),
     path('campuses/<int:pk>/', CampusDetailView.as_view()),
-    path('apartments/', ApartmentListView.as_view()),
-    path('apartments/<int:pk>/', ApartmentDetailView.as_view()),
-    path('apartments/<int:apartment_pk>/reviews/',ApartmentReviewListCreateView.as_view()),
+    path('housing/', HousingListView.as_view()),
+    path('housing/<int:pk>/', HousingDetailView.as_view()),
+    path('housing/<int:housing_pk>/reviews/',HousingReviewListCreateView.as_view()),
     path('reviews/<int:pk>/', ReviewDetailView.as_view()),
     path('reviews/<int:review_pk>/media/',MediaUploadView.as_view()),
     path('users/me/bookmarks/',BookmarkListCreateView.as_view()),

@@ -32,45 +32,45 @@ class CampusListView(generics.ListAPIView):
 
 class CampusDetailView(generics.RetrieveAPIView):
     queryset = Campus.objects.annotate(
-        apt_count=Count('apartments', distinct=True),
-        review_count=Count('apartments__reviews', distinct=True),
-        avg_cost=Avg('apartments__reviews__cost'),
-        avg_safety=Avg('apartments__reviews__safety'),
-        avg_management=Avg('apartments__reviews__management'),
-        avg_noise=Avg('apartments__reviews__noise'),
+        housing_count=Count('housings', distinct=True),
+        review_count=Count('housings__reviews', distinct=True),
+        avg_cost=Avg('housings__reviews__cost'),
+        avg_safety=Avg('housings__reviews__safety'),
+        avg_management=Avg('housings__reviews__management'),
+        avg_noise=Avg('housings__reviews__noise'),
     )
     serializer_class = CampusSerializer
     permission_classes = [AllowAny]
 
-class ApartmentListView(generics.ListAPIView):
+class HousingListView(generics.ListAPIView):
     """
     fetch(`/api/apartments/?campus=${id}&search=${term}&ordering=-created_at`)
     """
-    queryset = Apartment.objects.select_related('campus').annotate(
+    queryset = Housing.objects.select_related('campus').annotate(
         avg_cost=Avg('reviews__cost'),
         avg_safety=Avg('reviews__safety'),
         avg_management=Avg('reviews__management'),
         avg_noise=Avg('reviews__noise'),
         review_count=Count('reviews')
     )
-    serializer_class = ApartmentSerializer
+    serializer_class = HousingSerializer
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['campus']
+    filterset_fields = ['campus','type']
     search_fields = ['name', 'addressline1', 'addressline2', 'county']
     ordering_fields = ['name', 'latitude', 'longitude']
 
-class ApartmentDetailView(generics.RetrieveAPIView):
-    queryset = Apartment.objects.select_related('campus').annotate(
+class HousingDetailView(generics.RetrieveAPIView):
+    queryset = Housing.objects.select_related('campus').annotate(
         avg_cost       = Avg('reviews__cost'),
         avg_safety     = Avg('reviews__safety'),
         avg_management = Avg('reviews__management'),
         avg_noise      = Avg('reviews__noise'),
     )
-    serializer_class = ApartmentSerializer
+    serializer_class = HousingSerializer
     permission_classes = [AllowAny]
 
-class ApartmentReviewListCreateView(generics.ListCreateAPIView):
+class HousingReviewListCreateView(generics.ListCreateAPIView):
     serializer_class = ReviewSerializer
     permission_classes = [AllowAny]
     filter_backends = [filters.OrderingFilter]
@@ -79,13 +79,13 @@ class ApartmentReviewListCreateView(generics.ListCreateAPIView):
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
         # stash the apartment object so our serializer.create() can use it
-        ctx['apartment'] = get_object_or_404(Apartment, pk=self.kwargs['apartment_pk'])
+        ctx['housing'] = get_object_or_404(Housing, pk=self.kwargs['housing_pk'])
         return ctx
     
 
     def get_queryset(self):
-        apt = get_object_or_404(Apartment, pk=self.kwargs['apartment_pk'])
-        return apt.reviews.select_related('user').all()
+        house = get_object_or_404(Housing, pk=self.kwargs['housing_pk'])
+        return house.reviews.select_related('user').all()
 
     def perform_create(self, serializer):
         serializer.save()
@@ -97,7 +97,7 @@ class ApartmentReviewListCreateView(generics.ListCreateAPIView):
     
 
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Review.objects.select_related('user', 'apartment').all()
+    queryset = Review.objects.select_related('user', 'housing').all()
     serializer_class = ReviewSerializer
 
     def get_permissions(self):

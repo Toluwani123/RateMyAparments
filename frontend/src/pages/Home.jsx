@@ -7,7 +7,7 @@ import { publicApi } from '../api';
 
 function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [searchType, setSearchType] = useState('apartments');
+  const [searchType, setSearchType] = useState('housing');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -86,9 +86,10 @@ function Home() {
       <ul>
         {results.map(item => (
           <li key={item.id}>
-            {searchType === 'apartments' ? (
+            {searchType === 'housing' ? (
               <>
-                {item.name} — {item.addressline1} (<a href={`/apartments/${item.id}`}>View</a>)
+                {item.name} <em>({item.type==='hall' ? 'On-campus hall' : 'Off-campus apt'})</em>
+                &nbsp;(<a href={`/housing/${item.id}`}>View</a>)
               </>
             ) : (
               <>

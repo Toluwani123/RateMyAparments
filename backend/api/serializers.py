@@ -60,7 +60,7 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class CampusSerializer(serializers.ModelSerializer):
-    apt_count = serializers.IntegerField(read_only=True)
+    housing_count = serializers.IntegerField(read_only=True)
     review_count = serializers.IntegerField(read_only=True) 
     avg_cost = serializers.FloatField(read_only=True)
     avg_safety = serializers.FloatField(read_only=True)
@@ -69,32 +69,34 @@ class CampusSerializer(serializers.ModelSerializer):
    
     class Meta:
         model = Campus
-        fields = ('id', 'name', 'email_domain','apt_count', 'review_count',
+        fields = ('id', 'name', 'email_domain','housing_count', 'review_count',
                   'avg_cost', 'avg_safety', 'avg_management', 'avg_noise')
 
-class ApartmentSerializer(serializers.ModelSerializer):
+class HousingSerializer(serializers.ModelSerializer):
     campus = CampusSerializer(read_only=True)
     campus_id = serializers.PrimaryKeyRelatedField(
         write_only=True, queryset=Campus.objects.all(), source='campus'
     )
+    type = serializers.ChoiceField(choices=Housing.TYPE_CHOICES)
 
     avg_cost = serializers.FloatField(read_only=True)
     avg_safety = serializers.FloatField(read_only=True)
     avg_management = serializers.FloatField(read_only=True)
     avg_noise = serializers.FloatField(read_only=True)
+    review_count   = serializers.IntegerField(read_only=True)
 
     class Meta:
-        model = Apartment
+        model = Housing
         fields = (
-            'id', 'campus', 'campus_id',
+            'id', 'campus', 'campus_id', 'type',
             'name', 'addressline1', 'addressline2',
             'county', 'state', 'latitude', 'longitude', 'avg_cost',
-            'avg_safety', 'avg_management', 'avg_noise',
+            'avg_safety', 'avg_management', 'avg_noise', 'review_count'
         )
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer(read_only=True)
-    apartment = serializers.PrimaryKeyRelatedField(read_only=True)
+    housing = serializers.PrimaryKeyRelatedField(read_only=True)
     tag1 = serializers.ChoiceField(choices=APARTMENT_TAG_CHOICES)
     tag2 = serializers.ChoiceField(choices=APARTMENT_TAG_CHOICES)
     tag3 = serializers.ChoiceField(choices=APARTMENT_TAG_CHOICES)
@@ -103,14 +105,14 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = (
-            'id', 'apartment', 'user',
+            'id', 'housing', 'user',
             'cost', 'safety', 'management', 'noise',
             'comment', 'tag1', 'tag2', 'tag3',
             'created_at', 'updated_at',
             'media_urls',
         )
         read_only_fields = (
-            'id', 'apartment', 'user',
+            'id', 'housing', 'user',
             'created_at', 'updated_at', 'media_urls'
         )
 
@@ -126,12 +128,12 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop('user', None)
-        validated_data.pop('apartment', None)
+        validated_data.pop('housing', None)
 
-        apartment = self.context['apartment']
+        housing = self.context['housing']
         user      = self.context['request'].user
         return Review.objects.create(
-            apartment=apartment,
+            housing=housing,
             user=user,
             **validated_data
         )
@@ -158,11 +160,11 @@ class MediaSerializer(serializers.ModelSerializer):
     
 class BookmarkSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer(read_only=True)
-    apartment = serializers.PrimaryKeyRelatedField(queryset=Apartment.objects.all())
+    housing = serializers.PrimaryKeyRelatedField(queryset=Housing.objects.all())
 
     class Meta:
         model = Bookmark
-        fields = ('id', 'user', 'apartment', 'created_at')
+        fields = ('id', 'user', 'housing', 'created_at')
         read_only_fields = ('id','user','created_at')
     def create(self, validated):
         return Bookmark.objects.create(user=self.context['request'].user, **validated)

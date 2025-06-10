@@ -30,9 +30,13 @@ class Campus(models.Model):
     name = models.CharField(max_length=100, unique=True)
     email_domain = models.CharField(max_length=50, unique=True)  # e.g. "ttu.edu"
 
+
+    def __str__(self):
+        return self.name
+
     def average_ratings(self):
         return Review.objects.filter(
-            apartment__campus=self
+            housing__campus=self
         ).aggregate(
             avg_cost=models.Avg('cost'),
             avg_safety=models.Avg('safety'),
@@ -42,8 +46,13 @@ class Campus(models.Model):
 
 
 
-class Apartment(models.Model):
-    campus = models.ForeignKey('Campus', on_delete=models.CASCADE, related_name='apartments')
+class Housing(models.Model):
+    TYPE_CHOICES = [
+        ('apartment', 'Off-Campus Apartment'),
+        ('hall',      'On-Campus Hall'),
+    ]
+    campus = models.ForeignKey('Campus', on_delete=models.CASCADE, related_name='housings')
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     name = models.CharField(max_length=200)
     addressline1 = models.CharField(max_length=300)
     addressline2 = models.CharField(max_length=300,null=True, blank=True)
@@ -53,7 +62,10 @@ class Apartment(models.Model):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
     class Meta:
-        unique_together = ('campus', 'name')
+        unique_together = ('campus', 'name','type')
+
+    def __str__(self):
+        return f"{self.name} ({self.get_type_display()}) - {self.campus.name}"
 
 
     def average_rating(self):
@@ -68,7 +80,7 @@ class Apartment(models.Model):
 
 class Review(models.Model):
     RATING_CHOICES = [(i, i) for i in range(1, 6)]
-    apartment = models.ForeignKey('Apartment', on_delete=models.CASCADE, related_name='reviews')
+    housing = models.ForeignKey('Housing', on_delete=models.CASCADE, related_name='reviews', null=True, blank=True)
     user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='reviews')
     cost = models.IntegerField(choices=RATING_CHOICES)
     safety = models.IntegerField(choices=RATING_CHOICES)
@@ -82,13 +94,16 @@ class Review(models.Model):
     tag3 = models.CharField(max_length=30, choices=APARTMENT_TAG_CHOICES)
 
     class Meta:
-        unique_together = ('apartment', 'user')
+        unique_together = ('housing', 'user')
 
     def clean(self):
         for field in ('cost', 'safety', 'management', 'noise'):
             value = getattr(self, field)
             if not (1 <= value <= 5):
                 raise ValidationError(f"{field} rating must be between 1 and 5.")
+            
+    def __str__(self):
+        return f"Review by {self.user.username} for {self.housing.name} - {self.created_at.strftime('%Y-%m-%d')}"
 
 class Media(models.Model):
     review = models.ForeignKey('Review', on_delete=models.CASCADE, related_name='media')
@@ -97,11 +112,11 @@ class Media(models.Model):
 
 class Bookmark(models.Model):
     user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='bookmarks')
-    apartment = models.ForeignKey('Apartment', on_delete=models.CASCADE, related_name='bookmarked_by')
+    housing = models.ForeignKey('Housing', on_delete=models.CASCADE, related_name='bookmarked_by', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'apartment')
+        unique_together = ('user', 'housing')
 
 
 class Report(models.Model):
