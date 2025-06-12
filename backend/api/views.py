@@ -66,6 +66,7 @@ class HousingDetailView(generics.RetrieveAPIView):
         avg_safety     = Avg('reviews__safety'),
         avg_management = Avg('reviews__management'),
         avg_noise      = Avg('reviews__noise'),
+        review_count   = Count('reviews')
     )
     serializer_class = HousingSerializer
     permission_classes = [AllowAny]

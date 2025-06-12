@@ -5,6 +5,8 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from collections import Counter
+
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -84,6 +86,7 @@ class HousingSerializer(serializers.ModelSerializer):
     avg_management = serializers.FloatField(read_only=True)
     avg_noise = serializers.FloatField(read_only=True)
     review_count   = serializers.IntegerField(read_only=True)
+    top_tags = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Housing
@@ -91,8 +94,15 @@ class HousingSerializer(serializers.ModelSerializer):
             'id', 'campus', 'campus_id', 'type',
             'name', 'addressline1', 'addressline2',
             'county', 'state', 'latitude', 'longitude', 'avg_cost',
-            'avg_safety', 'avg_management', 'avg_noise', 'review_count'
+            'avg_safety', 'avg_management', 'avg_noise', 'review_count', 'top_tags'
         )
+
+    def get_top_tags(self, housing):
+        tag_counts = Counter()
+        for review in housing.reviews.all():
+            tag_counts.update([review.get_tag1_display(), review.get_tag2_display(), review.get_tag3_display()])
+
+        return [tag for tag,_ in tag_counts.most_common(3)]
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer(read_only=True)
@@ -100,6 +110,9 @@ class ReviewSerializer(serializers.ModelSerializer):
     tag1 = serializers.ChoiceField(choices=APARTMENT_TAG_CHOICES)
     tag2 = serializers.ChoiceField(choices=APARTMENT_TAG_CHOICES)
     tag3 = serializers.ChoiceField(choices=APARTMENT_TAG_CHOICES)
+    tag1_display = serializers.CharField(source='get_tag1_display', read_only=True)
+    tag2_display = serializers.CharField(source='get_tag2_display', read_only=True)
+    tag3_display = serializers.CharField(source='get_tag3_display', read_only=True)
     media_urls = serializers.SerializerMethodField()
 
     class Meta:
@@ -109,7 +122,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             'cost', 'safety', 'management', 'noise',
             'comment', 'tag1', 'tag2', 'tag3',
             'created_at', 'updated_at',
-            'media_urls',
+            'media_urls', 'tag1_display', 'tag2_display', 'tag3_display'
         )
         read_only_fields = (
             'id', 'housing', 'user',

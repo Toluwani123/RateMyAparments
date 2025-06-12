@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import Campus from './pages/Campus';
+import Housing from './pages/Housing';
 
 function Logout() {
   localStorage.clear();
@@ -28,6 +29,7 @@ function App() {
         <Route path="/logout" element={<Logout />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/campuses/:id" element={<Campus />} />
+        <Route path="/housing/:id" element={<Housing />} />
       </Routes>
     </Router>
 
