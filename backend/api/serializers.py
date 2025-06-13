@@ -16,9 +16,11 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['email']    = user.email
         return token
 class UserNestedSerializer(serializers.ModelSerializer):
+    campus_name = serializers.CharField(source='campus.name', read_only=True)
     class Meta:
         model = User
-        fields = ('id', 'username')
+        fields = ('id','username','email','campus','campus_name','is_verified','date_joined')
+
 
 class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
@@ -107,6 +109,8 @@ class HousingSerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer(read_only=True)
     housing = serializers.PrimaryKeyRelatedField(read_only=True)
+    housing_name = serializers.CharField(source='housing.name', read_only=True)
+    housing_type = serializers.CharField(source='housing.type', read_only=True)
     tag1 = serializers.ChoiceField(choices=APARTMENT_TAG_CHOICES)
     tag2 = serializers.ChoiceField(choices=APARTMENT_TAG_CHOICES)
     tag3 = serializers.ChoiceField(choices=APARTMENT_TAG_CHOICES)
@@ -114,6 +118,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     tag2_display = serializers.CharField(source='get_tag2_display', read_only=True)
     tag3_display = serializers.CharField(source='get_tag3_display', read_only=True)
     media_urls = serializers.SerializerMethodField()
+    media_items = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
@@ -122,12 +127,22 @@ class ReviewSerializer(serializers.ModelSerializer):
             'cost', 'safety', 'management', 'noise',
             'comment', 'tag1', 'tag2', 'tag3',
             'created_at', 'updated_at',
-            'media_urls', 'tag1_display', 'tag2_display', 'tag3_display'
+            'media_urls', 'tag1_display', 'tag2_display', 'tag3_display', 'housing_name', 'housing_type', 'media_items',
         )
         read_only_fields = (
             'id', 'housing', 'user',
-            'created_at', 'updated_at', 'media_urls'
+            'created_at', 'updated_at', 'media_urls', 'housing_name', 'housing_type',
         )
+
+    def get_media_items(self, review):
+        request = self.context.get('request')
+        return [
+            {
+                'id': m.id,
+                'url': request.build_absolute_uri(m.image.url)
+            }
+            for m in review.media.all()
+        ]
 
     def get_media_urls(self, review):
         request = self.context.get('request')

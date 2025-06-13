@@ -6,7 +6,7 @@ import {ACCESS_TOKEN, REFRESH_TOKEN} from "../constants";
 
 
 function ProtectedRoute({children}) {
-    const [isAuthorized, setAuthorized] = useState(false);
+    const [isAuthorized, setAuthorized] = useState(null);
 
 
     const refreshToken = async () => {

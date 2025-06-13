@@ -23,6 +23,14 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
+class UserDetailView(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserNestedSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_object(self):
+        return self.request.user
+
 class CampusListView(generics.ListAPIView):
     queryset = Campus.objects.all()
     serializer_class = CampusSerializer
@@ -96,6 +104,13 @@ class HousingReviewListCreateView(generics.ListCreateAPIView):
             return [IsAuthenticated()]
         return [AllowAny()]
     
+class UserReviewListView(generics.ListAPIView):
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return Review.objects.filter(user=self.request.user).select_related('housing').order_by('-created_at')
+    
 
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.select_related('user', 'housing').all()
@@ -142,8 +157,12 @@ class BookmarkDeleteView(generics.DestroyAPIView):
 
 class MediaUploadView(generics.CreateAPIView):
     serializer_class  = MediaSerializer
-    permission_classes = [IsAuthenticated]
     parser_classes     = (MultiPartParser, FormParser)
+
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated()]
+        return [AllowAny()]
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
@@ -155,9 +174,24 @@ class MediaUploadView(generics.CreateAPIView):
         if review.user != self.request.user:
             raise PermissionDenied("You can only upload media to your own reviews.")
         # now delegate to serializer.create(), which will pull 'review' from context
-        serializer.save(review=review)
+        serializer.save()
 
-        
+    def get_queryset(self):
+        review = self.get_serializer_context()['review']
+        return review.media.all()
+
+class MediaDetailView(generics.RetrieveDestroyAPIView):
+    queryset = Media.objects.all()
+    serializer_class = MediaSerializer
+    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        media = super().get_object()
+        if media.review.user != self.request.user:
+            raise PermissionDenied("You can only delete media from your own reviews.")
+        return media
+
 class ReportCreateView(generics.CreateAPIView):
     serializer_class = ReportSerializer
     permission_classes = [IsAuthenticated]

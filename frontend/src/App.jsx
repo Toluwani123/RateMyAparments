@@ -6,6 +6,8 @@ import Register from './pages/Register';
 import NotFound from './pages/NotFound';
 import Campus from './pages/Campus';
 import Housing from './pages/Housing';
+import Dashboard from './pages/Dashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function Logout() {
   localStorage.clear();
@@ -30,6 +32,11 @@ function App() {
         <Route path="*" element={<NotFound />} />
         <Route path="/campuses/:id" element={<Campus />} />
         <Route path="/housing/:id" element={<Housing />} />
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
       </Routes>
     </Router>
 

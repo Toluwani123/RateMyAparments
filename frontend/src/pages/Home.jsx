@@ -48,7 +48,7 @@ function Home() {
       <h1>RateMyApartments</h1>
       <p>{isLoggedIn ? "You are logged in." : "You are not logged in."}</p>
       <nav>
-        <a href="/login">Login</a> | <a href="/register">Register</a>
+        <a href="/login">Login</a> | <a href="/register">Register</a> | <a href="/dashboard">Dashboard</a>
       </nav>
 
       {/* Toggle Buttons */}

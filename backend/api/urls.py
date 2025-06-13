@@ -9,10 +9,13 @@ urlpatterns = [
     path('housing/<int:housing_pk>/reviews/',HousingReviewListCreateView.as_view()),
     path('reviews/<int:pk>/', ReviewDetailView.as_view()),
     path('reviews/<int:review_pk>/media/',MediaUploadView.as_view()),
+    path('reviews/<int:review_pk>/media/<int:pk>/',MediaDetailView.as_view()),
     path('users/me/bookmarks/',BookmarkListCreateView.as_view()),
     path('bookmarks/<int:pk>/',BookmarkDeleteView.as_view()),
     path('reviews/<int:review_pk>/reports/',ReportCreateView.as_view()),
     path('reports/',ReportListView.as_view()),
     path('reports/<int:pk>/',ReportStatusUpdateView.as_view()),
+    path('users/me/reviews/', UserReviewListView.as_view()),
+    path('users/me/', UserDetailView.as_view()),
     
 ]

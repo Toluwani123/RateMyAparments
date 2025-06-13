@@ -4,18 +4,19 @@ import { useNavigate } from 'react-router-dom'
 
 
 
-export default function ReviewForm({housingId, onSuccess, onClose}) {
+export default function ReviewForm({housingId,review=null, onSuccess, onClose}) {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        cost: 3,
-        safety: 3,
-        management: 3,
-        noise: 3,
-        comment: '',
-        tag1: '',
-        tag2: '',
-        tag3: '',
+      cost:       review?.cost       ?? 3,
+      safety:     review?.safety     ?? 3,
+      management: review?.management ?? 3,
+      noise:      review?.noise      ?? 3,
+      comment:    review?.comment    ?? '',
+      tag1:       review?.tag1       ?? '',
+      tag2:       review?.tag2       ?? '',
+      tag3:       review?.tag3       ?? '',
     });
+    const [files, setFiles] = useState([]);
     const [error, setError] = useState(null);
     const TAGS = [
         'close_to_campus','responsive_maintenance','affordable',
@@ -25,6 +26,20 @@ export default function ReviewForm({housingId, onSuccess, onClose}) {
         'walkable_area','unresponsive_management',
         'quiet_and_chill','free_parking','frequent_pest_issues'
     ];
+    useEffect(() => {
+      if (review) {
+        setFormData({
+          cost:       review.cost,
+          safety:     review.safety,
+          management: review.management,
+          noise:      review.noise,
+          comment:    review.comment,
+          tag1:       review.tag1,
+          tag2:       review.tag2,
+          tag3:       review.tag3,
+        });
+      }
+    }, [review]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -33,16 +48,37 @@ export default function ReviewForm({housingId, onSuccess, onClose}) {
             [name]: value
         }));
     }
+    const handleFileChange = (e) => {
+      setFiles(Array.from(e.target.files));
+    }
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError(null);
+      e.preventDefault();
+      setError(null);
 
-        try{
-            await api.post(`/housing/${housingId}/reviews/`, formData);
-            onSuccess();
-            onClose();
+      try {
+        // 1️⃣ Create the review
+        const res = review
+          ? await api.patch(`/reviews/${review.id}/`, formData)
+          : await api.post(  `/housing/${housingId}/reviews/`, formData);
+        const reviewId = res.data.id;
 
-        }catch (err){
+        // 2️⃣ Upload each file
+        if (files.length) {
+          await Promise.all(files.map(file => {
+            const fd = new FormData();
+            fd.append('image', file);
+            return api.post(
+              `/reviews/${reviewId}/media/`,
+              fd,
+              { headers: { 'Content-Type': 'multipart/form-data' }}
+            );
+          }));
+        }
+
+        onSuccess();
+        onClose();
+      }
+      catch (err){
             setError(err.response?.data?.detail || 'An error occurred while submitting your review.');
         }
     }
@@ -73,6 +109,10 @@ export default function ReviewForm({housingId, onSuccess, onClose}) {
               />
             </label>
           </div>
+
+          
+
+
           {[1,2,3].map(i => (
             <div key={i}>
               <label>Tag {i}:
@@ -89,6 +129,16 @@ export default function ReviewForm({housingId, onSuccess, onClose}) {
               </label>
             </div>
           ))}
+
+          <div style={{ marginTop: '1rem' }}>
+            <label>Upload Photos/Videos:</label><br/>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              onChange={handleFileChange}
+            />
+          </div>
           <div style={{ marginTop: '1rem' }}>
             <button type="submit">Submit</button>
             <button type="button" onClick={onClose} style={{ marginLeft: '0.5rem' }}>
@@ -104,9 +154,9 @@ export default function ReviewForm({housingId, onSuccess, onClose}) {
 const modalStyles = {
   overlay: {
     position: 'fixed', top:0, left:0, width:'100vw', height:'100vh',
-    background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center'
+    background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000
   },
   modal: {
-    background:'#fff', padding:'1rem', borderRadius:'4px', minWidth:'300px'
+    background:'#fff', padding:'1rem', borderRadius:'4px', minWidth:'300px', position:'relative', zIndex:1001
   }
 };
