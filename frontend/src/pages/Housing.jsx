@@ -1,5 +1,5 @@
 import React, {useState, useEffect, use} from 'react'
-import { publicApi } from '../api'
+import api, { publicApi } from '../api'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { checkAuth } from '../checkauth'
 import { jwtDecode } from 'jwt-decode'
@@ -58,6 +58,26 @@ function Housing() {
     setShowForm(true);
   };
 
+  const toggleBookmark = async () => {
+    if (!isLoggedIn) {
+      navigate('/login');
+      return;
+    }
+    try {
+      if (housing.is_bookmarked) {
+        await api.delete(`/bookmarks/${housing.bookmark_id}/`);
+      }
+      else {
+        await api.post('users/me/bookmarks/', { housing: housing.id });
+      }
+      const res = await api.get(`/housing/${id}/`);
+      setHousing(res.data);
+    }
+    catch (err) {
+      setError(err.toString());
+    }
+  };
+
 
     // Determine type label
   const typeLabel = housing.type === 'hall'
@@ -105,6 +125,10 @@ function Housing() {
           <Link to="/">← Back to Home</Link>
 
         </div>
+
+        <button onClick={toggleBookmark} style={{ marginLeft: '1rem' }}>
+          {housing.is_bookmarked ? '★ Remove Bookmark' : '☆ Add Bookmark'}
+        </button>
 
         {/* Reviews List */}
         <h2>Reviews</h2>

@@ -17,6 +17,10 @@ export default function Dashboard() {
   const [bookmarks, setBookmarks]   = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [expandedReviews, setExpandedReviews] = useState(new Set());
+  const [matches, setMatches] = useState([]);
+
+
+
 
 
 
@@ -41,12 +45,14 @@ export default function Dashboard() {
         if (!ok) return navigate('/login');
         // fetch all three in parallel
         fetchUserReviews();
-        const [bm, u] = await Promise.all([
+        const [bm, u, mt] = await Promise.all([
           api.get('/users/me/bookmarks/'),
           api.get('/users/me/'),
+          api.get('/users/me/matches/'),
         ]);
         setBookmarks(bm.data);
         setCurrentUser(u.data);
+        setMatches(mt.data);
       } catch (e) {
         setError(e.toString());
       }
@@ -162,12 +168,21 @@ export default function Dashboard() {
         {bookmarks.map(b => (
           <li key={b.id} style={{ padding:'.5rem', border:'1px solid #ddd', margin:'.5rem 0' }}>
             <Link to={`/housing/${b.housing.id}`}>
-              {b.housing.name} — {b.housing.type==='hall'?'On-Campus':'Off-Campus'}
+              {b.housing_name} — {b.housing.type==='hall'?'On-Campus':'Off-Campus'}
             </Link>
             <button
               onClick={() => handleRemoveBookmark(b.id)}
               style={{ marginLeft:'1rem' }}
             >Remove</button>
+          </li>
+        ))}
+      </ul>
+      <h3>Matched Housing for {currentUser.username}</h3>
+      <ul>
+        {matches.map(m => (
+          <li key={m.user.id}>
+            <strong>{m.user.username}</strong> — Score: {m.score.toFixed(2)}
+            <Link to={`/user/${m.user.id}/profile`}>View Profile</Link>
           </li>
         ))}
       </ul>

@@ -82,7 +82,8 @@ class HousingSerializer(serializers.ModelSerializer):
         write_only=True, queryset=Campus.objects.all(), source='campus'
     )
     type = serializers.ChoiceField(choices=Housing.TYPE_CHOICES)
-
+    is_bookmarked = serializers.SerializerMethodField(read_only=True)
+    bookmark_id = serializers.SerializerMethodField(read_only=True)
     avg_cost = serializers.FloatField(read_only=True)
     avg_safety = serializers.FloatField(read_only=True)
     avg_management = serializers.FloatField(read_only=True)
@@ -96,7 +97,7 @@ class HousingSerializer(serializers.ModelSerializer):
             'id', 'campus', 'campus_id', 'type',
             'name', 'addressline1', 'addressline2',
             'county', 'state', 'latitude', 'longitude', 'avg_cost',
-            'avg_safety', 'avg_management', 'avg_noise', 'review_count', 'top_tags'
+            'avg_safety', 'avg_management', 'avg_noise', 'review_count', 'top_tags', 'is_bookmarked', 'bookmark_id'
         )
 
     def get_top_tags(self, housing):
@@ -105,6 +106,18 @@ class HousingSerializer(serializers.ModelSerializer):
             tag_counts.update([review.get_tag1_display(), review.get_tag2_display(), review.get_tag3_display()])
 
         return [tag for tag,_ in tag_counts.most_common(3)]
+    
+    def get_is_bookmarked(self, housing):
+        user = self.context['request'].user
+        if not user.is_authenticated:
+            return False
+        return Bookmark.objects.filter(user=user, housing=housing).exists()
+    def get_bookmark_id(self, housing):
+        user = self.context['request'].user
+        if not user.is_authenticated:
+            return None
+        bookmark = Bookmark.objects.filter(user=user, housing=housing).first()
+        return bookmark.id if bookmark else None
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer(read_only=True)
@@ -189,11 +202,12 @@ class MediaSerializer(serializers.ModelSerializer):
 class BookmarkSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer(read_only=True)
     housing = serializers.PrimaryKeyRelatedField(queryset=Housing.objects.all())
+    housing_name = serializers.CharField(source='housing.name', read_only=True)
 
     class Meta:
         model = Bookmark
-        fields = ('id', 'user', 'housing', 'created_at')
-        read_only_fields = ('id','user','created_at')
+        fields = ('id', 'user', 'housing', 'created_at', 'housing_name')
+        read_only_fields = ('id','user','created_at', 'housing_name')
     def create(self, validated):
         return Bookmark.objects.create(user=self.context['request'].user, **validated)
 
@@ -215,3 +229,21 @@ class ReportStatusUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Report
         fields = ('status',)
+
+
+class RoommateMatchSerializer(serializers.ModelSerializer):
+    campus = CampusSerializer(read_only=True)
+    campus_id = serializers.PrimaryKeyRelatedField(
+        write_only=True, queryset=Campus.objects.all(), source='campus' )
+    
+    user = UserNestedSerializer(read_only=True)
+    score = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = RoommateProfile
+        fields = (
+            'id', 'user', 'campus', 'campus_id',
+            'cleanliness', 'noise_tolerance',
+            'pets_ok', 'smoker_ok', 'sleep_schedule',
+            'bio', 'score',
+        )

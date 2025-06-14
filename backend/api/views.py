@@ -10,6 +10,8 @@ from .serializers import *
 from rest_framework_simplejwt.views import *
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Avg, Count
+from rest_framework.views import APIView
+from .listforstates import compatibility_score
 
 # Create your views here.
 
@@ -210,3 +212,31 @@ class ReportStatusUpdateView(generics.UpdateAPIView):
     queryset = Report.objects.all()
     serializer_class = ReportStatusUpdateSerializer
     permission_classes = [IsAdminUser]
+
+
+class RoommateMatchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, format=None):
+        me = request.user
+        profile = me.roommate_profile
+
+        me_ids = set(me.bookmarks.values_list('housing_id', flat=True))
+        candidates = User.objects.filter(
+            roommate_profile__looking_for_roommate=True,
+            bookmarks__housing__in=me_ids
+        ).exclude(id=me.id).distinct()
+
+
+        matches = []
+        for c in candidates:
+            computed_score = compatibility_score(me, c)
+            matches.append({'user': c, 'score': computed_score})
+
+        matches.sort(key=lambda x: x['score'], reverse=True)
+        top_matches = matches[:10]
+        print(top_matches)
+        serializer = RoommateMatchSerializer(top_matches, many=True)
+        return Response(serializer.data)
+
+    

@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from .listforstates import *
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 class User(AbstractUser):
@@ -136,3 +137,37 @@ def send_verification_email(sender, instance, created, **kwargs):
         pass
         instance.send_verification_email()
 """
+
+class RoommateProfile(models.Model):
+    GENDER_OPTIONS = [
+        ('male',   'Male'),
+        ('female', 'Female'),
+        ('other',  'Other'),
+        ('n/a',    'Prefer not to say'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='roommate_profile')
+    looking_for_roommate = models.BooleanField(default=False)
+    bio= models.TextField(blank=True)
+    age = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(18), MaxValueValidator(100)])
+    gender = models.CharField(max_length=20, choices= GENDER_OPTIONS, null=True, blank=True)
+
+    pets_ok = models.BooleanField(default=False, db_index=True)
+    smoker_ok = models.BooleanField(default=False, db_index=True)
+    cleanliness = models.PositiveSmallIntegerField(choices=[(i,i) for i in range(1,6)], null=True, blank=True)
+    noise_tolerance = models.PositiveSmallIntegerField(choices=[(i,i) for i in range(1,6)], null=True, blank=True)
+    sleep_schedule = models.CharField(max_length=100, choices=[
+        ('Early Bird', 'Early Bird'),
+        ('Night Owl', 'Night Owl'),
+        ('Flexible', 'Flexible')
+    ], null=True, blank=True)
+
+    class Meta:
+        ordering = ['user__username']
+
+    def __str__(self):
+        return f"Roommate Profile for {self.user.username}"
+    
+@receiver(post_save, sender=User)
+def create_user_roommate_profile(sender, instance, created, **kwargs):
+    if created and not hasattr(instance, 'roommate_profile'):
+        RoommateProfile.objects.create(user=instance)

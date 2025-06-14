@@ -17,5 +17,6 @@ urlpatterns = [
     path('reports/<int:pk>/',ReportStatusUpdateView.as_view()),
     path('users/me/reviews/', UserReviewListView.as_view()),
     path('users/me/', UserDetailView.as_view()),
+    path('users/me/matches/', RoommateMatchView.as_view()),
     
 ]
