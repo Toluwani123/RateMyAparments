@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../api';
 import { checkAuth } from '../checkauth';
 import ReviewForm from '../components/ReviewForm';
+import ProfileForm from '../components/ProfileForm';
 
 const TABS = ['reviews','bookmarks','profile'];
 export default function Dashboard() {
@@ -18,6 +19,19 @@ export default function Dashboard() {
   const [currentUser, setCurrentUser] = useState(null);
   const [expandedReviews, setExpandedReviews] = useState(new Set());
   const [matches, setMatches] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [profileModal, setProfileModal] = useState(null);
+
+  function openProfileModal(profile) {
+    setProfileModal(profile);
+  }
+  function closeProfileModal() {
+    setProfileModal(null);  
+  }
+
+  
+
 
 
 
@@ -27,6 +41,13 @@ export default function Dashboard() {
   const fetchUserReviews = async () => {
     const rv = await api.get('/users/me/reviews/');
     setReviews(rv.data);
+  };
+
+  const fetchProfile = async () => {
+
+    api.get('/users/me/profile/')
+      .then(res => setProfile(res.data))
+      .catch(err => setError(err.toString()));
   };
 
   const toggleReviewExpansion = (id) => {
@@ -45,14 +66,17 @@ export default function Dashboard() {
         if (!ok) return navigate('/login');
         // fetch all three in parallel
         fetchUserReviews();
+        fetchProfile();
         const [bm, u, mt] = await Promise.all([
           api.get('/users/me/bookmarks/'),
           api.get('/users/me/'),
           api.get('/users/me/matches/'),
+          
         ]);
         setBookmarks(bm.data);
         setCurrentUser(u.data);
         setMatches(mt.data);
+        
       } catch (e) {
         setError(e.toString());
       }
@@ -167,7 +191,7 @@ export default function Dashboard() {
       <ul>
         {bookmarks.map(b => (
           <li key={b.id} style={{ padding:'.5rem', border:'1px solid #ddd', margin:'.5rem 0' }}>
-            <Link to={`/housing/${b.housing.id}`}>
+            <Link to={`/housing/${b.housing_id}`}>
               {b.housing_name} — {b.housing.type==='hall'?'On-Campus':'Off-Campus'}
             </Link>
             <button
@@ -178,11 +202,32 @@ export default function Dashboard() {
         ))}
       </ul>
       <h3>Matched Housing for {currentUser.username}</h3>
+      {profileModal && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <h3>{profileModal.user.username}’s Profile</h3>
+            <p><strong>Bio:</strong> {profileModal.bio || '–'}</p>
+            <p><strong>Age:</strong> {profileModal.age ?? '–'}</p>
+            <p><strong>Gender:</strong> {profileModal.gender_display}</p>
+            <p><strong>Pets OK:</strong> {profileModal.pets_ok ? 'Yes':'No'}</p>
+            <p><strong>Smoker OK:</strong> {profileModal.smoker_ok ? 'Yes':'No'}</p>
+            <p><strong>Cleanliness:</strong> {profileModal.cleanliness}</p>
+            <p><strong>Noise Tolerance:</strong> {profileModal.noise_tolerance}</p>
+            <p><strong>Sleep Schedule:</strong> {profileModal.sleep_schedule_display}</p>
+            {/* later: social URLs, e.g.: */}
+            {profileModal.twitter && (
+              <p><a href={profileModal.twitter}>Twitter</a></p>
+            )}
+            <button onClick={closeProfileModal}>Close</button>
+          </div>
+        </div>
+      )}
+
       <ul>
         {matches.map(m => (
           <li key={m.user.id}>
             <strong>{m.user.username}</strong> — Score: {m.score.toFixed(2)}
-            <Link to={`/user/${m.user.id}/profile`}>View Profile</Link>
+            <button onClick={() => openProfileModal(m.profile)}>View Profile</button>
           </li>
         ))}
       </ul>
@@ -197,6 +242,33 @@ export default function Dashboard() {
       <p><strong>Campus:</strong> {currentUser.campus_name}</p>
       <p><strong>Verified:</strong> {currentUser.is_verified ? 'Yes' : 'No'}</p>
       <p><strong>Joined:</strong> {new Date(currentUser.date_joined).toLocaleDateString()}</p>
+
+      {profile ? (
+          <div>
+            <h3>Profile Details</h3>
+            <button onClick={() => setShowForm(true)}>Edit Profile</button>
+
+            {showForm && (
+              <ProfileForm
+                profile={profile}
+                onSuccess={fetchProfile}
+                onClose={() => setShowForm(false)}
+              />
+            )}
+
+            <p><strong>Looking for roommate:</strong> {profile.looking_for_roommate ? 'Yes' : 'No'}</p>
+            <p><strong>Bio:</strong> {profile.bio || <em>No bio provided</em>}</p>
+            <p><strong>Age:</strong> {profile.age ?? <em>Not set</em>}</p>
+            <p><strong>Gender:</strong> {profile.gender_display}</p>
+            <p><strong>Pets OK:</strong> {profile.pets_ok ? 'Yes' : 'No'}</p>
+            <p><strong>Smoking OK:</strong> {profile.smoker_ok ? 'Yes' : 'No'}</p>
+            <p><strong>Cleanliness:</strong> {profile.cleanliness ?? <em>Not set</em>}</p>
+            <p><strong>Noise Tolerance:</strong> {profile.noise_tolerance ?? <em>Not set</em>}</p>
+            <p><strong>Sleep Schedule:</strong> {profile.sleep_schedule_display}</p>
+          </div>
+      ) : (
+          <p>Loading profile details...</p>
+      )}
 
       
     </>
@@ -215,6 +287,8 @@ export default function Dashboard() {
         />
       )}
       <h1>Dashboard</h1>
+      <p>Welcome, {currentUser?.username || 'loading…'}!</p>
+      <Link to="/">Home</Link>
       {/* Tab Nav */}
       <nav style={{ marginBottom:'1rem' }}>
         {TABS.map(tab => (

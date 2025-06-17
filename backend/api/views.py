@@ -238,5 +238,19 @@ class RoommateMatchView(APIView):
         print(top_matches)
         serializer = RoommateMatchSerializer(top_matches, many=True)
         return Response(serializer.data)
+    
+class RoommateProfileView(generics.RetrieveUpdateAPIView):
+    queryset = RoommateProfile.objects.all()
+    serializer_class = RoommateProfileSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.roommate_profile
+
+    def perform_update(self, serializer):
+        profile = self.get_object()
+        if profile.user != self.request.user:
+            raise PermissionDenied("You can only update your own roommate profile.")
+        serializer.save()
 
     

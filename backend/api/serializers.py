@@ -203,10 +203,11 @@ class BookmarkSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer(read_only=True)
     housing = serializers.PrimaryKeyRelatedField(queryset=Housing.objects.all())
     housing_name = serializers.CharField(source='housing.name', read_only=True)
+    housing_id = serializers.PrimaryKeyRelatedField(source='housing.id', read_only=True)
 
     class Meta:
         model = Bookmark
-        fields = ('id', 'user', 'housing', 'created_at', 'housing_name')
+        fields = ('id', 'user', 'housing', 'created_at', 'housing_name', 'housing_id')
         read_only_fields = ('id','user','created_at', 'housing_name')
     def create(self, validated):
         return Bookmark.objects.create(user=self.context['request'].user, **validated)
@@ -231,19 +232,37 @@ class ReportStatusUpdateSerializer(serializers.ModelSerializer):
         fields = ('status',)
 
 
-class RoommateMatchSerializer(serializers.ModelSerializer):
+
+class RoommateProfileSerializer(serializers.ModelSerializer):
+    user = UserNestedSerializer(read_only=True)
     campus = CampusSerializer(read_only=True)
     campus_id = serializers.PrimaryKeyRelatedField(
         write_only=True, queryset=Campus.objects.all(), source='campus' )
     
+    gender_display = serializers.CharField(source='get_gender_display', read_only=True)
+    sleep_schedule_display = serializers.CharField(source='get_sleep_schedule_display', read_only=True)
+    
+    class Meta:
+        model = RoommateProfile
+        fields = (
+            'id','user','campus','campus_id',
+            'looking_for_roommate','bio','age',
+            'gender','gender_display',
+            'pets_ok','smoker_ok',
+            'cleanliness','noise_tolerance',
+            'sleep_schedule','sleep_schedule_display',
+        )
+        read_only_fields = ('id', 'user', 'campus', 'gender_display','sleep_schedule_display')
+
+        
+
+class RoommateMatchSerializer(serializers.Serializer):
+    profile = RoommateProfileSerializer(source='user.roommate_profile', read_only=True)
     user = UserNestedSerializer(read_only=True)
     score = serializers.FloatField(read_only=True)
 
     class Meta:
-        model = RoommateProfile
+       
         fields = (
-            'id', 'user', 'campus', 'campus_id',
-            'cleanliness', 'noise_tolerance',
-            'pets_ok', 'smoker_ok', 'sleep_schedule',
-            'bio', 'score',
+            'user', 'score', 'profile'
         )
