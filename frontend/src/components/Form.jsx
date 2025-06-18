@@ -37,8 +37,8 @@ function Form({route, method}) {
                 navigate("/");
             }
             else {
-                alert("Registration successful");
-                navigate("/login");
+                alert("Registration successful, please verify your email");
+                navigate("/verify-email");
             }
         }
         catch (error) {

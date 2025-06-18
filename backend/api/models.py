@@ -5,6 +5,8 @@ from .listforstates import *
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, MaxValueValidator
+import secrets
+from django.utils import timezone
 
 # Create your models here.
 class User(AbstractUser):
@@ -130,13 +132,22 @@ class Report(models.Model):
 
     class Meta:
         unique_together = ('review', 'reporter')
-"""
-@receiver(post_save, sender=User)
-def send_verification_email(sender, instance, created, **kwargs):
-    if created and not instance.is_verified:
-        pass
-        instance.send_verification_email()
-"""
+
+def make_verification_code():
+    """Generates a unique 6-character verification code."""
+    return secrets.token_hex(3).upper()  # Generates a 6-character hex code
+
+class UserVerification(models.Model):
+    user = models.OneToOneField('User', on_delete=models.CASCADE, related_name='verification')
+    verification_code = models.CharField(max_length=6, unique=True, default=make_verification_code)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expired_at = models.DateTimeField(null=True, blank=True)  # Set when the code expires
+
+
+    def __str__(self):
+        return f"Verification for {self.user.username}"
+
+
 
 class RoommateProfile(models.Model):
     GENDER_OPTIONS = [
@@ -167,7 +178,3 @@ class RoommateProfile(models.Model):
     def __str__(self):
         return f"Roommate Profile for {self.user.username}"
     
-@receiver(post_save, sender=User)
-def create_user_roommate_profile(sender, instance, created, **kwargs):
-    if created and not hasattr(instance, 'roommate_profile'):
-        RoommateProfile.objects.create(user=instance)

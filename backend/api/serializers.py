@@ -43,8 +43,8 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Passwords must match."})
-        if not attrs['email'].lower().endswith('.edu'):
-            raise serializers.ValidationError({"email": "Must be an .edu address."})
+        #if not attrs['email'].lower().endswith('.edu'):
+            #raise serializers.ValidationError({"email": "Must be an .edu address."})
         return attrs
 
     def create(self, validated):
@@ -266,3 +266,6 @@ class RoommateMatchSerializer(serializers.Serializer):
         fields = (
             'user', 'score', 'profile'
         )
+
+class VerifyCodeSerializer(serializers.Serializer):
+    code = serializers.CharField(max_length=6)

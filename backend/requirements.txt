@@ -12,3 +12,6 @@ django-fernet-fields
 django-encrypted-model-fields
 django-filter
 stripe
+numpy
+pandas
+

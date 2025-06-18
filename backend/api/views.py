@@ -25,6 +25,39 @@ class CreateUserView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
 
+
+
+class UserVerificationView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, format=None):
+        print(f"[DEBUG] VerificationView POST data: {request.data}")  # ←
+        code = request.data.get('code')
+        if not code:
+            print("[DEBUG] No code provided in request")  # ←
+            return Response({"detail": "Code is required."}, status=400)
+
+        try:
+            uv = UserVerification.objects.get(verification_code=code)
+            print(f"[DEBUG] Found UserVerification for user={uv.user.username}")  # ←
+        except UserVerification.DoesNotExist:
+            print(f"[DEBUG] No UserVerification found for code={code}")  # ←
+            return Response({"detail": "Invalid code."}, status=400)
+
+        if uv.expired_at < timezone.now():
+            print(f"[DEBUG] Code expired at {uv.expired_at}")  # ←
+            return Response({"detail": "Code expired."}, status=400)
+
+        user = uv.user
+        user.is_verified = True
+        user.is_active   = True
+        user.verified_at = timezone.now()
+        user.save(update_fields=['is_verified','is_active','verified_at'])
+        print(f"[DEBUG] User {user.username} marked verified/active")  # ←
+
+        return Response({"detail": "Verified!"}, status=200)
+    
+    
 class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserNestedSerializer
