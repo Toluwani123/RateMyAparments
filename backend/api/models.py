@@ -63,6 +63,9 @@ class Housing(models.Model):
     state = models.CharField(max_length=2, choices=US_STATE_CHOICES)
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    description  = models.TextField(blank=True)
+    commute      = models.CharField(max_length=100, blank=True)
+    features     = models.JSONField(default=list, blank=True) 
 
     class Meta:
         unique_together = ('campus', 'name','type')

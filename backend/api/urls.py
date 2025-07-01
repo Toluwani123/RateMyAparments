@@ -20,6 +20,7 @@ urlpatterns = [
     path('users/me/matches/', RoommateMatchView.as_view()),
     path('users/me/profile/', RoommateProfileView.as_view()),
     path('verify-email/', UserVerificationView.as_view(), name='verify-email'),
+    path('scrape-now/', trigger_scraper),
 
     
 ]

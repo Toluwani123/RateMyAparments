@@ -12,6 +12,20 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Avg, Count
 from rest_framework.views import APIView
 from .listforstates import compatibility_score
+from .scraper import scrape_and_update
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from .scraper import scrape_and_update
+
+@api_view(['POST'])
+@permission_classes([])
+def trigger_scraper(request):
+    scrape_and_update()
+    return Response({"detail":"Scraper run complete"})
+
 
 # Create your views here.
 

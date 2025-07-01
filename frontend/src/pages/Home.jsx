@@ -42,6 +42,16 @@ function Home() {
 
     return () => clearTimeout(timer);
   }, [query, searchType]);
+
+  const [scraping, setScraping] = useState(false);
+
+  const runScraper = () => {
+    publicApi.post('/scrape-now/')
+      .then(() => alert('Scraper triggered!'))
+      .catch(() => alert('Trigger failed.'))
+      .finally(() => setScraping(false));
+  };
+
   
   return (
     <div>
@@ -50,6 +60,11 @@ function Home() {
       <nav>
         <a href="/login">Login</a> | <a href="/register">Register</a> | <a href="/dashboard">Dashboard</a>
       </nav>
+
+      {/* Scraper Trigger Button */}
+      <button onClick={runScraper} disabled={scraping}>
+        {scraping ? 'Running…' : 'Trigger Scraper'}
+      </button>
 
       {/* Toggle Buttons */}
       <div style={{ margin: '1rem 0' }}>

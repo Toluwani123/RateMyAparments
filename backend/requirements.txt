@@ -1,4 +1,5 @@
 asgiref
+BeautifulSoup4
 Django
 django-cors-headers
 djangorestframework
@@ -14,4 +15,5 @@ django-filter
 stripe
 numpy
 pandas
+requests
 
