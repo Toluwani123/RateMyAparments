@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import Verify from './pages/Verify';
 
+
+
 function Logout() {
   localStorage.clear();
   return <Navigate to="/login" />;

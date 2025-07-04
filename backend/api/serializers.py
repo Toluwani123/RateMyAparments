@@ -6,6 +6,7 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from collections import Counter
+from django.db.models import Count, Avg
 
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -75,12 +76,15 @@ class CampusSerializer(serializers.ModelSerializer):
         model = Campus
         fields = ('id', 'name', 'email_domain','housing_count', 'review_count',
                   'avg_cost', 'avg_safety', 'avg_management', 'avg_noise')
+    
+
 
 class HousingSerializer(serializers.ModelSerializer):
     campus = CampusSerializer(read_only=True)
     campus_id = serializers.PrimaryKeyRelatedField(
         write_only=True, queryset=Campus.objects.all(), source='campus'
     )
+    campus_name = serializers.CharField(source='campus.name', read_only=True)
     type = serializers.ChoiceField(choices=Housing.TYPE_CHOICES)
     is_bookmarked = serializers.SerializerMethodField(read_only=True)
     bookmark_id = serializers.SerializerMethodField(read_only=True)
@@ -95,6 +99,7 @@ class HousingSerializer(serializers.ModelSerializer):
         model = Housing
         fields = (
             'id', 'campus', 'campus_id', 'type',
+            'campus_name',
             'name', 'addressline1', 'addressline2',
             'county', 'state', 'latitude', 'longitude', 'avg_cost',
             'avg_safety', 'avg_management', 'avg_noise', 'review_count', 'top_tags', 'is_bookmarked', 'bookmark_id'

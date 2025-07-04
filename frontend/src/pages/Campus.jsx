@@ -1,4 +1,3 @@
-// src/components/CampusPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { publicApi } from '../api';

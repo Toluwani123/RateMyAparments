@@ -81,11 +81,18 @@ class UserDetailView(generics.RetrieveAPIView):
         return self.request.user
 
 class CampusListView(generics.ListAPIView):
-    queryset = Campus.objects.all()
+    queryset = Campus.objects.annotate(
+        housing_count=Count('housings', distinct=True),
+        review_count=Count('housings__reviews', distinct=True),
+        avg_cost=Avg('housings__reviews__cost'),
+        avg_safety=Avg('housings__reviews__safety'),
+        avg_management=Avg('housings__reviews__management'),
+        avg_noise=Avg('housings__reviews__noise'),
+    )
     serializer_class = CampusSerializer
-    search_fields = ['name', 'email_domain']
     permission_classes = [AllowAny]
-    pagination_class = None  # disable pagination
+    search_fields = ['name', 'email_domain']
+    pagination_class = None
 
 class CampusDetailView(generics.RetrieveAPIView):
     queryset = Campus.objects.annotate(
