@@ -32,8 +32,10 @@ class User(AbstractUser):
 class Campus(models.Model):
     name = models.CharField(max_length=100, unique=True)
     email_domain = models.CharField(max_length=50, unique=True)  # e.g. "ttu.edu"
-
-
+    description = models.TextField(blank=True)
+    logo = models.FileField(upload_to='campus_logos/', null=True, blank=True)
+    website = models.URLField(blank=True)
+    background_image = models.FileField(upload_to='campus_backgrounds/', null=True, blank=True)
     def __str__(self):
         return self.name
 
@@ -66,6 +68,8 @@ class Housing(models.Model):
     description  = models.TextField(blank=True)
     commute      = models.CharField(max_length=100, blank=True)
     features     = models.JSONField(default=list, blank=True) 
+    thumbnail   = models.URLField(max_length=500, null=True, blank=True)
+    lowest_rent = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     class Meta:
         unique_together = ('campus', 'name','type')

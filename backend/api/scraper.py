@@ -1,3 +1,4 @@
+from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 import requests
 
@@ -9,15 +10,16 @@ from django.conf import settings
 from django.utils import timezone
 from .models import Campus, Housing
 
+
+
+import re
+
+
 def scrape_details(detail_page_url):
-    """
-    Return
-        • all_features – list[str]   (EVERY <li> inside <ul class="extra-list"> in Amenities)
-        • description  – str
-    """
     details = {
         "all_features": [],
-        "description":  ""
+        "description": "",
+        "lowest_rent": None,
     }
 
     try:
@@ -28,6 +30,7 @@ def scrape_details(detail_page_url):
 
     soup = BeautifulSoup(r.text, "html.parser")
 
+    # ————————— Amenities —————————
     features = []
     for ul in soup.find_all("ul", class_="extra-list"):
         for li in ul.find_all("li"):
@@ -36,14 +39,41 @@ def scrape_details(detail_page_url):
                 features.append(text)
     details["all_features"] = list(set(features))
 
-
-    
-    desc_hdr = soup.find(lambda tag: tag.name == "h2" and "description" in tag.get_text(strip=True).lower())
+    # ————————— Description —————————
+    desc_hdr = soup.find(
+        lambda tag: tag.name == "h2"
+                    and "description" in tag.get_text(strip=True).lower()
+    )
     if desc_hdr:
         block = desc_hdr.find_parent("div", class_="feature-block")
         if block:
-            paragraphs = block.find_all("p")
-            details["description"] = " ".join(p.get_text(" ", strip=True) for p in paragraphs)
+            paras = block.find_all("p")
+            details["description"] = " ".join(p.get_text(" ", strip=True) for p in paras)
+
+    # ————————— Lowest Rent —————————
+    rent_prices = []
+    # find **all** tables under any tab-pane
+    for pane in soup.select("div.tab-pane"):
+        for row in pane.select("tbody tr"):
+            cols = row.find_all("td")
+            if len(cols) < 4:
+                continue
+            rent_text = cols[3].get_text(" ", strip=True)
+            # extract any numbers, e.g. “$917.00” or “1163.00”
+            found = re.findall(r"\$?([\d,]+(?:\.\d+)?)", rent_text)
+            # convert to float
+            nums = []
+            for num in found:
+                clean = num.replace(",", "")
+                try:
+                    nums.append(float(clean))
+                except ValueError:
+                    pass
+            if nums:
+                rent_prices.append(min(nums))
+
+    if rent_prices:
+        details["lowest_rent"] = min(rent_prices)
 
     return details
 
@@ -74,10 +104,14 @@ def scrape_off_campus_housing(url=url):
                 apartment['address'] = "No address found"
 
             link = listing.find('a', href=True)
-            if link:
-                apartment['link'] = link['href']
-                details = scrape_details(apartment['link'])
-                apartment.update(details)
+            detail_url = link['href'] if link else "No link found"
+            apartment['link'] = detail_url
+            if detail_url:
+                
+                apartment.update(scrape_details(detail_url))
+                # gallery images
+                
+
             else:
                 apartment['link'] = "No link found"
 
@@ -108,7 +142,10 @@ def scrape_off_campus_housing(url=url):
                 apartment['to_campus'] = "No commute information found"
 
 
-
+            thumb = listing.find('img')
+            if thumb:
+                src = thumb.get('src') or thumb.get('data-lazy')
+                apartment['thumbnail'] = urljoin(url, src)
 
             apartments.append(apartment)
 
@@ -143,10 +180,13 @@ def scrape_and_update():
             "description":  data.get("description", ""),
             "commute":      data.get("to_campus", ""),
             "features":     data.get("all_features", []),
+            "thumbnail":    data.get("thumbnail", None),
+            "lowest_rent": data.get("lowest_rent", None),
         }
         apt, created = Housing.objects.update_or_create(
             campus=campus,
             name=name,
+
             defaults=defaults
         )
         print(f"{'Created' if created else 'Updated'} apartment: {apt.name}")

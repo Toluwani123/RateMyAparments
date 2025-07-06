@@ -102,6 +102,8 @@ class CampusDetailView(generics.RetrieveAPIView):
         avg_safety=Avg('housings__reviews__safety'),
         avg_management=Avg('housings__reviews__management'),
         avg_noise=Avg('housings__reviews__noise'),
+        avg_lowest_rent_apartment=Avg('housings__lowest_rent', filter=models.Q(housings__type='apartment')),
+        avg_lowest_rent_hall=Avg('housings__lowest_rent', filter=models.Q(housings__type='hall')),
     )
     serializer_class = CampusSerializer
     permission_classes = [AllowAny]

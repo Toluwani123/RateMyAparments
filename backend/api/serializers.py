@@ -71,12 +71,18 @@ class CampusSerializer(serializers.ModelSerializer):
     avg_safety = serializers.FloatField(read_only=True)
     avg_management = serializers.FloatField(read_only=True)
     avg_noise = serializers.FloatField(read_only=True)
-   
+    logo = serializers.FileField(read_only=True)
+    background_image = serializers.FileField(read_only=True)
+    avg_lowest_rent_apartment = serializers.FloatField(read_only=True)
+    avg_lowest_rent_hall      = serializers.FloatField(read_only=True)
+
+
     class Meta:
         model = Campus
         fields = ('id', 'name', 'email_domain','housing_count', 'review_count',
-                  'avg_cost', 'avg_safety', 'avg_management', 'avg_noise')
-    
+                  'avg_cost', 'avg_safety', 'avg_management', 'avg_noise', 'logo', 'background_image', 'description', 'website',
+                  'avg_lowest_rent_apartment', 'avg_lowest_rent_hall')
+
 
 
 class HousingSerializer(serializers.ModelSerializer):
@@ -93,7 +99,11 @@ class HousingSerializer(serializers.ModelSerializer):
     avg_management = serializers.FloatField(read_only=True)
     avg_noise = serializers.FloatField(read_only=True)
     review_count   = serializers.IntegerField(read_only=True)
+    
     top_tags = serializers.SerializerMethodField(read_only=True)
+    thumbnail = serializers.URLField(read_only=True)
+
+
 
     class Meta:
         model = Housing
@@ -102,7 +112,7 @@ class HousingSerializer(serializers.ModelSerializer):
             'campus_name',
             'name', 'addressline1', 'addressline2',
             'county', 'state', 'latitude', 'longitude', 'avg_cost',
-            'avg_safety', 'avg_management', 'avg_noise', 'review_count', 'top_tags', 'is_bookmarked', 'bookmark_id'
+            'avg_safety', 'avg_management', 'avg_noise', 'review_count', 'top_tags', 'is_bookmarked', 'bookmark_id', 'thumbnail','commute','lowest_rent',
         )
 
     def get_top_tags(self, housing):
