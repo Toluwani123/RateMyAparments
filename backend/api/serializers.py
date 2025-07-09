@@ -99,9 +99,10 @@ class HousingSerializer(serializers.ModelSerializer):
     avg_management = serializers.FloatField(read_only=True)
     avg_noise = serializers.FloatField(read_only=True)
     review_count   = serializers.IntegerField(read_only=True)
+    avg_overall = serializers.SerializerMethodField(read_only=True)
     
     top_tags = serializers.SerializerMethodField(read_only=True)
-    thumbnail = serializers.URLField(read_only=True)
+    image_urls = serializers.ListField(child=serializers.URLField(), read_only=True)
 
 
 
@@ -113,14 +114,35 @@ class HousingSerializer(serializers.ModelSerializer):
             'name', 'addressline1', 'addressline2',
             'county', 'state', 'latitude', 'longitude', 'avg_cost',
             'avg_safety', 'avg_management', 'avg_noise', 'review_count', 'top_tags', 'is_bookmarked', 'bookmark_id', 'thumbnail','commute','lowest_rent',
+            'description', 'features', 'image_urls', 'avg_overall', 'bedrooms', 'bathrooms','phone'
         )
 
     def get_top_tags(self, housing):
         tag_counts = Counter()
         for review in housing.reviews.all():
-            tag_counts.update([review.get_tag1_display(), review.get_tag2_display(), review.get_tag3_display()])
+            tags = [
+                review.get_tag1_display(),
+                review.get_tag2_display(),
+                review.get_tag3_display(),
+            ]
+            tag_counts.update([t for t in tags if t])   # filter out None/''
 
-        return [tag for tag,_ in tag_counts.most_common(3)]
+        return [tag for tag, _ in tag_counts.most_common(3)]
+    
+
+    
+
+    def get_avg_overall(self, housing):
+        if not housing.reviews.exists():
+            return None
+        parts =[
+            housing.avg_cost,
+            housing.avg_safety,
+            housing.avg_management,
+            housing.avg_noise,
+        ]
+        valid = [p for p in parts if p is not None]
+        return sum(valid) / len(valid) if valid else None
     
     def get_is_bookmarked(self, housing):
         user = self.context['request'].user
@@ -133,6 +155,8 @@ class HousingSerializer(serializers.ModelSerializer):
             return None
         bookmark = Bookmark.objects.filter(user=user, housing=housing).first()
         return bookmark.id if bookmark else None
+
+
 
 class ReviewSerializer(serializers.ModelSerializer):
     user = UserNestedSerializer(read_only=True)
@@ -147,6 +171,7 @@ class ReviewSerializer(serializers.ModelSerializer):
     tag3_display = serializers.CharField(source='get_tag3_display', read_only=True)
     media_urls = serializers.SerializerMethodField()
     media_items = serializers.SerializerMethodField()
+    overall_rating = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Review
@@ -155,12 +180,20 @@ class ReviewSerializer(serializers.ModelSerializer):
             'cost', 'safety', 'management', 'noise',
             'comment', 'tag1', 'tag2', 'tag3',
             'created_at', 'updated_at',
-            'media_urls', 'tag1_display', 'tag2_display', 'tag3_display', 'housing_name', 'housing_type', 'media_items',
+            'media_urls', 'tag1_display', 'tag2_display', 'tag3_display', 'housing_name', 'housing_type', 'media_items', 'overall_rating'
         )
         read_only_fields = (
             'id', 'housing', 'user',
             'created_at', 'updated_at', 'media_urls', 'housing_name', 'housing_type',
         )
+
+    def get_overall_rating(self, review):
+        """
+        Calculate the overall rating as the average of cost, safety, management, and noise ratings.
+        """
+        ratings = [review.cost, review.safety, review.management, review.noise]
+        valid_ratings = [r for r in ratings if r is not None]
+        return sum(valid_ratings) / len(valid_ratings) if valid_ratings else None
 
     def get_media_items(self, review):
         request = self.context.get('request')

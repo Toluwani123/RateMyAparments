@@ -1,6 +1,7 @@
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 import requests
+import random
 
 url = "https://www.rentcollegepads.com/off-campus-housing/texas-tech/search"
 headers = {
@@ -20,6 +21,10 @@ def scrape_details(detail_page_url):
         "all_features": [],
         "description": "",
         "lowest_rent": None,
+        "image_urls": [],
+        "phone": "",
+        "bedrooms": None,
+        "bathrooms": None,
     }
 
     try:
@@ -74,6 +79,65 @@ def scrape_details(detail_page_url):
 
     if rent_prices:
         details["lowest_rent"] = min(rent_prices)
+
+    # ————————— Gallery Images —————————
+    MAX_IMAGES        = 4
+    S3_BASE           = "https://s3.amazonaws.com/rcp-prod-uploads/property_images/slider_images/"
+    gallery_div       = soup.find(id="gallerySlider")
+    details["image_urls"] = []                       # always present
+
+    if gallery_div:
+        seen = set()
+
+        # any <img> inside the slider, eager or lazy-loaded
+        for tag in gallery_div.select("img"):
+            raw = tag.get("src") or tag.get("data-lazy")
+            if not raw:
+                continue
+
+            # convert relative -> absolute
+            url = raw if raw.startswith(("http://", "https://")) else urljoin(S3_BASE, raw.lstrip("/"))
+
+            if url in seen:
+                continue
+            seen.add(url)
+
+            if len(seen) == MAX_IMAGES:
+                break
+
+        details["image_urls"] = list(seen) 
+
+    # Contact information
+    contact_div = soup.find("li", class_="nav-item")
+    if contact_div:
+        phone = contact_div.find("a", href=re.compile(r"tel:"))
+        if phone:
+            details["phone"] = phone.get("href", "").replace("tel:", "").strip()
+        else:
+            details["phone"] = "No phone number found"
+    else:
+
+        details["phone"] = "No contact information found"
+
+    # Bathrooms and Bedrooms
+    details["bedrooms"] = None     # keep the keys consistent even if not found
+    details["bathrooms"] = None
+
+    bed_bath_div = soup.find("div", class_="property-detail")
+    if bed_bath_div:
+        for row in bed_bath_div.select("tbody tr"):
+            cols = row.find_all("td")
+            if len(cols) != 2:
+                continue
+            label = cols[0].get_text(strip=True).rstrip(":").lower()
+            value = cols[1].get_text(strip=True)
+
+            if label == "bedrooms":
+                details["bedrooms"] = value          # e.g. "2-4"
+            elif label == "bathrooms":
+                details["bathrooms"] = value  
+
+
 
     return details
 
@@ -182,6 +246,10 @@ def scrape_and_update():
             "features":     data.get("all_features", []),
             "thumbnail":    data.get("thumbnail", None),
             "lowest_rent": data.get("lowest_rent", None),
+            'image_urls': data.get("image_urls", []),
+            "phone": data.get("phone", ""),
+            "bedrooms": data.get("bedrooms", None),
+            "bathrooms": data.get("bathrooms", None),
         }
         apt, created = Housing.objects.update_or_create(
             campus=campus,

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { publicApi } from '../api';
 import Footer from '../components/Footer';
-import Radial from '../components/Radial';
+import RadarChart from '../components/Radial';
 import { IoCheckmarkDone } from "react-icons/io5";
 import { LiaDollarSignSolid } from "react-icons/lia";
 import { FaShieldHalved } from "react-icons/fa6";
@@ -282,7 +282,7 @@ export default function CampusPage() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="md:col-span-1">
               <div id="campus-ratings-chart" className="flex items-center justify-center mb-6">
-                <Radial metrics={campusMetrics} />
+                <RadarChart metrics={campusMetrics} />
               </div>
             </div>
             <div className="md:col-span-4">

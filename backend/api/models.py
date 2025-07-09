@@ -70,6 +70,10 @@ class Housing(models.Model):
     features     = models.JSONField(default=list, blank=True) 
     thumbnail   = models.URLField(max_length=500, null=True, blank=True)
     lowest_rent = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    image_urls = models.JSONField(default=list, blank=True)  # Store multiple image URLs
+    phone = models.CharField(max_length=20, null=True, blank=True)
+    bedrooms = models.CharField(max_length=50, null=True, blank=True)
+    bathrooms = models.CharField(max_length=50, null=True, blank=True)
 
     class Meta:
         unique_together = ('campus', 'name','type')
