@@ -3,65 +3,31 @@ import {Navigate} from "react-router-dom";
 import {jwtDecode} from "jwt-decode";
 import api from "../api";
 import {ACCESS_TOKEN, REFRESH_TOKEN} from "../constants";
+import {refreshAccessToken} from "../auth";
 
 
-function ProtectedRoute({children}) {
-    const [isAuthorized, setAuthorized] = useState(null);
+function ProtectedRoute({ children }) {
+  const [ready, setReady] = useState(false);
+  const [ok,   setOk]     = useState(false);
 
+  useEffect(() => {
+    (async () => {
+      const token = localStorage.getItem(ACCESS_TOKEN);
+      if (!token) return setReady(true), setOk(false);
 
-    const refreshToken = async () => {
-        const refreshToken = localStorage.getItem(REFRESH_TOKEN);
-        if (refreshToken) {
-            try {
-                const response = await api.post('/token/refresh/', {refresh: refreshToken});
-                if (response.status === 200) {
-                    localStorage.setItem(REFRESH_TOKEN, response.data.refresh);
-                    setAuthorized(true);
-                }
-                else {
-                    setAuthorized(false);
-                }
-            } catch (error) {
-                console.error('Error refreshing token:', error);
-                setAuthorized(false);
-            }
-        } else {
-            setAuthorized(false);
-        }
-    };
+      try {
+        const { exp } = jwtDecode(token);
+        const valid = exp * 1000 > Date.now() || await refreshAccessToken();
+        setOk(valid);
+      } finally {
+        setReady(true);
+      }
+    })();
+  }, []);
 
-    const auth = async () => {
-        const token = localStorage.getItem(ACCESS_TOKEN);
-        if (token) {
-            try {
-                const decodedToken = jwtDecode(token);
-                const currentTime = Date.now() / 1000;
-                if (decodedToken.exp < currentTime) {
-                    await refreshToken();
-                } else {
-                    setAuthorized(true);
-                }
-            } catch (error) {
-                console.error('Error decoding token:', error);
-                setAuthorized(false);
-            }
-        } else {
-            setAuthorized(false);
-        }
-    }
-    useEffect(() => {
-        auth().catch(()=> setAuthorized(false));
-    }, []);
-
-    if (isAuthorized === null){
-        return <div>Loading...</div>
-    }
-
-    return isAuthorized ? (
-        children
-    ) : (
-        <Navigate to="/login"/>
-    );
+  if (!ready) return <div>Loading…</div>;
+  return ok ? children : <Navigate to="/login" replace />;
 }
+
 
 export default ProtectedRoute;

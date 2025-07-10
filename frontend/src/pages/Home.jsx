@@ -286,9 +286,9 @@ function Home() {
                   >
                     <div className="h-40 bg-gray-200 overflow-hidden">
                       <img
-                        src={`https://readdy.ai/api/search-image?query=Beautiful%20university%20campus%20with%20modern%20buildings%2C%20green%20spaces%2C%20and%20students%20walking%20around%2C%20bright%20daylight%2C%20clear%20blue%20sky%2C%20professional%20photography%2C%20high%20resolution%2C%20architectural%20photography&width=600&height=400&seq=${campus.id}&orientation=landscape`}
+                        src={campus.logo}
                         alt={campus.name}
-                        className="w-full h-full object-cover object-top"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="p-5">
@@ -337,7 +337,7 @@ function Home() {
                   >
                     <div className="h-40 bg-gray-200 overflow-hidden">
                       <img
-                        src={`https://readdy.ai/api/search-image?query=Modern%20apartment%20building%20or%20student%20residence%20hall%2C%20clean%20architecture%2C%20well-maintained%20exterior%2C%20with%20some%20greenery%2C%20bright%20daylight%2C%20professional%20real%20estate%20photography%2C%20high%20resolution&width=600&height=400&seq=${housing.id + 10}&orientation=landscape`}
+                        src={housing.thumbnail}
                         alt={housing.name}
                         className="w-full h-full object-cover object-top"
                       />

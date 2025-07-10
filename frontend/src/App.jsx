@@ -1,4 +1,6 @@
 import React from 'react';
+import { useState, useEffect } from 'react';
+import { checkAuth } from './checkauth';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -23,6 +25,14 @@ function RegisterandLogout()  {
 }
 
 function App() {
+  const [authReady, setReady] = useState(false);
+
+  useEffect(() => {
+    checkAuth().then(() => setReady(true));
+  }, []);
+
+  if (!authReady) return <div className="grid place-items-center h-screen">Loading…</div>;
+
   
 
   return (

@@ -37,24 +37,27 @@ function Housing() {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [activeTab, setActiveTab] = useState('overview');
 
+
+
   useEffect(() => {
     const token = localStorage.getItem(ACCESS_TOKEN);
     if (token) {
       const { username } = jwtDecode(token);
       setCurrentUser(username);
       setIsLoggedIn(true);
+       // Use authenticated API client
     }
   }, []);
 
 
   useEffect(() => {
-    publicApi.get(`/housing/${id}/`)
+    api.get(`/housing/${id}/`)
       .then(res => setHousing(res.data))
       .catch(err => setError(err.toString()))
   }, [id])
 
   const fetchReviews = () => {
-    publicApi.get(`/housing/${id}/reviews/`)
+    api.get(`/housing/${id}/reviews/`)
       .then(res => {
         const data = res.data.results ?? res.data;
         setReviews(data);
@@ -90,8 +93,11 @@ function Housing() {
       else {
         await api.post('users/me/bookmarks/', { housing: housing.id });
       }
-      const res = await api.get(`/housing/${id}/`);
-      setHousing(res.data);
+      setHousing(prev => ({
+        ...prev,
+        is_bookmarked: !prev.is_bookmarked,
+        bookmark_id: prev.is_bookmarked ? null : housing.id
+      }));
     }
     catch (err) {
       setError(err.toString());
@@ -253,6 +259,7 @@ function Housing() {
               <p className="text-gray-500 text-sm">
                 {housing.review_count} reviews
               </p>
+            {isLoggedIn ? (
               <button
                 onClick={toggleBookmark}
                 className={`mt-3 py-2 px-4 font-medium rounded-md !rounded-button whitespace-nowrap cursor-pointer
@@ -264,6 +271,9 @@ function Housing() {
               >
                 {housing.is_bookmarked ? '★ Remove Bookmark' : '☆ Add Bookmark'}
               </button>
+                  
+                ) : null}
+
 
             </div>
           </div>
@@ -601,11 +611,26 @@ function Housing() {
                       <span>Sorting by Most Recent</span>
                     </button>
                   </div>
-                  <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md !rounded-button whitespace-nowrap cursor-pointer"
-                    onClick={openForm}>
-                    <i className="fas fa-pencil-alt mr-2"></i>
-                    Write a Review ✍️
-                  </button>
+                  {isLoggedIn ? (
+                    reviews.some(r => r.user?.username === currentUser) ? (
+                      <button 
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md !rounded-button whitespace-nowrap cursor-pointer"
+                      >
+                        Edit your Review on your Dashboard ✍️
+                      </button>
+                    ) : (
+                      <button 
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md !rounded-button whitespace-nowrap cursor-pointer"
+                        onClick={openForm}
+                      >
+                        Write your Review ✍️
+                      </button>
+                    )
+                  ) : null}
+
+
+
+                  
                 </div>
               </div>
 

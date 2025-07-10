@@ -52,33 +52,63 @@ export default function ProfileForm({profile, onSuccess, onClose}) {
       }
     }
   return (
-    <div style={modalStyles.overlay}>
-      
-      <div style={modalStyles.modal}>
-        <h2>Edit Roommate Profile</h2>
-        {error && <p style={{ color:'red' }}>{JSON.stringify(error)}</p>}
-        <form onSubmit={handleSubmit}>
-          <label>
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 px-4">
+      <div className="w-full max-w-lg overflow-hidden rounded-xl bg-white shadow-xl">
+        {/* ───── header ───── */}
+        <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+          <h2 className="text-lg font-semibold text-gray-800">
+            Edit Roommate Profile
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 transition hover:text-gray-600"
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+          {/* error */}
+          {error && (
+            <p className="rounded-md bg-red-50 px-4 py-2 text-sm text-red-600">
+              {error}
+            </p>
+          )}
+
+          {/* looking for roommate */}
+          <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
             <input
               type="checkbox"
               name="looking_for_roommate"
               checked={formData.looking_for_roommate}
               onChange={handleChange}
-            /> I’m looking for a roommate
+              className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            I’m looking for a roommate
           </label>
 
+          {/* bio */}
           <div>
-            <label>Bio:
-              <textarea
-                name="bio"
-                value={formData.bio}
-                onChange={handleChange}
-              />
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Bio
             </label>
+            <textarea
+              name="bio"
+              rows={4}
+              value={formData.bio}
+              onChange={handleChange}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              placeholder="Tell others about yourself…"
+            />
           </div>
 
-          <div>
-            <label>Age:
+          {/* age & gender */}
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Age
+              </label>
               <input
                 name="age"
                 type="number"
@@ -86,76 +116,105 @@ export default function ProfileForm({profile, onSuccess, onClose}) {
                 max="120"
                 value={formData.age}
                 onChange={handleChange}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
               />
-            </label>
-          </div>
+            </div>
 
-          <div>
-            <label>Gender:
-              <select name="gender" value={formData.gender} onChange={handleChange}>
-                <option value="">-- choose --</option>
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Gender
+              </label>
+              <select
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="">– choose –</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="other">Other</option>
                 <option value="n/a">Prefer not to say</option>
               </select>
-            </label>
+            </div>
           </div>
 
-          <label>
-            <input
-              type="checkbox"
-              name="pets_ok"
-              checked={formData.pets_ok}
-              onChange={handleChange}
-            /> Pets OK
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              name="smoker_ok"
-              checked={formData.smoker_ok}
-              onChange={handleChange}
-            /> Smoker OK
-          </label>
-
-          {['cleanliness','noise_tolerance'].map(field => (
-            <div key={field}>
-              <label>
-                {field.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}:
-                <select
-                  name={field}
-                  value={formData[field]}
+          {/* pets & smoker */}
+          <div className="flex flex-col gap-4 sm:flex-row">
+            {[
+              { name: 'pets_ok', label: 'Pets OK' },
+              { name: 'smoker_ok', label: 'Smoker OK' },
+            ].map((opt) => (
+              <label
+                key={opt.name}
+                className="flex items-center gap-3 text-sm font-medium text-gray-700"
+              >
+                <input
+                  type="checkbox"
+                  name={opt.name}
+                  checked={formData[opt.name]}
                   onChange={handleChange}
-                >
-                  <option value="">--</option>
-                  {[1,2,3,4,5].map(n =>
-                    <option key={n} value={n}>{n}</option>
-                  )}
-                </select>
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                {opt.label}
               </label>
+            ))}
+          </div>
+
+          {/* sliders */}
+          {['cleanliness', 'noise_tolerance'].map((field) => (
+            <div key={field}>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                {field.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+              </label>
+              <select
+                name={field}
+                value={formData[field]}
+                onChange={handleChange}
+                className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="">–</option>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
             </div>
           ))}
 
+          {/* sleep schedule */}
           <div>
-            <label>Sleep Schedule:
-              <select
-                name="sleep_schedule"
-                value={formData.sleep_schedule}
-                onChange={handleChange}
-              >
-                <option value="">--</option>
-                <option value="Early Bird">Early Bird</option>
-                <option value="Night Owl">Night Owl</option>
-                <option value="Flexible">Flexible</option>
-              </select>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Sleep Schedule
             </label>
+            <select
+              name="sleep_schedule"
+              value={formData.sleep_schedule}
+              onChange={handleChange}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            >
+              <option value="">–</option>
+              <option value="Early Bird">Early Bird</option>
+              <option value="Night Owl">Night Owl</option>
+              <option value="Flexible">Flexible</option>
+            </select>
           </div>
 
-          <div style={{ marginTop:'1rem' }}>
-            <button type="submit">Save</button>
-            <button type="button" onClick={onClose} style={{ marginLeft:'.5rem' }}>
+          {/* action buttons */}
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+            >
               Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              Save
             </button>
           </div>
         </form>
