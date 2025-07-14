@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { ACCESS_TOKEN } from './constants';
+import { ACCESS_TOKEN, REFRESH_TOKEN } from './constants';
 import { refreshAccessToken } from './auth';
 
 const api = axios.create({
@@ -7,7 +7,9 @@ const api = axios.create({
 });
 
 
-export const publicApi = api;
+export const publicApi = axios.create({
+    baseURL: import.meta.env.VITE_API_URL,
+});
 
 api.interceptors.request.use(cfg => {
   const token = localStorage.getItem(ACCESS_TOKEN);
@@ -24,6 +26,9 @@ api.interceptors.response.use(
     const { config, response } = err;
 
     // We only handle *one* case: 401 + not-retried-yet
+    if(!localStorage.getItem(REFRESH_TOKEN)) {
+      throw err; // no refresh token, so we can't do anything
+    }
     if (response?.status === 401 && !config._retry) {
       // if another request is already refreshing, await the same promise
       if (!refreshPromise) refreshPromise = refreshAccessToken();

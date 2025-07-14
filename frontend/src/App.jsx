@@ -1,7 +1,10 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+// App.jsx
+import React, { useState, useEffect } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes, Route, Navigate, useLocation
+} from 'react-router-dom';
 import { checkAuth } from './checkauth';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -13,48 +16,49 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Verify from './pages/Verify';
 
 
+/* -------- helpers -------- */
+function Logout   () { localStorage.clear(); return <Navigate to="/login" />; }
+function RegClear () { localStorage.clear(); return <Register            />; }
 
-function Logout() {
-  localStorage.clear();
-  return <Navigate to="/login" />;
-}
+/* -------- inner wrapper --------
+   (gets Router context, location, etc.) */
+function AppRoutes() {
+  const { pathname }      = useLocation();               // ✅ now inside Router
+  const isAuthPage        = ['/login','/register','/verify-email']
+                            .includes(pathname);
+  const [ready, setReady] = useState(false);
 
-function RegisterandLogout()  {
-  localStorage.clear();
-  return <Register />;
-}
-
-function App() {
-  const [authReady, setReady] = useState(false);
-
+  /* run checkAuth once, *unless* we’re already on an auth page */
   useEffect(() => {
+    if (isAuthPage) return setReady(true);    // allow page to load immediately
     checkAuth().then(() => setReady(true));
-  }, []);
+  }, [isAuthPage]);
 
-  if (!authReady) return <div className="grid place-items-center h-screen">Loading…</div>;
-
-  
+  if (!ready)
+    return <div className="grid place-items-center h-screen">Loading…</div>;
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<RegisterandLogout />} />
-        <Route path="/logout" element={<Logout />} />
-        <Route path="*" element={<NotFound />} />
-        <Route path="/campuses/:id" element={<Campus />} />
-        <Route path="/housing/:id" element={<Housing />} />
-        <Route path="/verify-email" element={<Verify />} />
-        <Route path="/dashboard" element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } />
-      </Routes>
-    </Router>
-
-  )
+    <Routes>
+      <Route path="/"               element={<Home />} />
+      <Route path="/login"          element={<Login />} />
+      <Route path="/register"       element={<RegClear />} />
+      <Route path="/logout"         element={<Logout />} />
+      <Route path="/verify-email"   element={<Verify />} />
+      <Route path="/campuses/:id"   element={<Campus />} />
+      <Route path="/housing/:id"    element={<Housing />} />
+      <Route path="/dashboard"      element={
+        <ProtectedRoute><Dashboard /></ProtectedRoute>
+      }/>
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
 }
 
-export default App
+/* -------- exported component -------- */
+export default function App() {
+  return (
+    <Router>
+      <AppRoutes />      {/* location & auth logic live here */}
+    </Router>
+  );
+}

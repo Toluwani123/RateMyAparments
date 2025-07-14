@@ -27,6 +27,8 @@ function Home() {
   const [topRatedHousing, setTopRatedHousing] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
 
+  const excludecampus = [3]
+
 
   // check auth once
   useEffect(() => {
@@ -39,7 +41,7 @@ function Home() {
       try {
         // Load popular campuses
         const campusResponse = await publicApi.get('/campuses/');
-        const campusData = campusResponse.data.results ?? campusResponse.data;
+        const campusData = (campusResponse.data.results ?? campusResponse.data).filter(c => !excludecampus.includes(c.id));
         setPopularCampuses(campusData.slice(0, 3)); // Take first 3 for display
         
         // Load top rated housing

@@ -386,14 +386,10 @@ export default function CampusPage() {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">Housing Overview</h3>
                 <p className="text-gray-700 mb-4">
-                  UC Berkeley offers a diverse range of housing options to accommodate its large student population. On-campus residence halls provide a 
-                  traditional college experience with easy access to classes and campus facilities. These buildings vary from historic halls with classic 
-                  architecture to modern complexes with suite-style accommodations.
+                  Universities in Texas offer a wide range of on-campus housing options designed to meet the diverse needs of their student populations. Most public and private universities require first-year students to live on campus, helping them transition into college life with easy access to academic resources, dining halls, and social activities. Housing options typically include traditional residence halls, suite-style rooms, and apartment-style living, with various amenities such as furnished rooms, high-speed internet, laundry facilities, and study lounges. Many campuses also offer Living Learning Communities (LLCs) that group students by shared academic interests or lifestyle preferences, creating a supportive and engaging environment.
                 </p>
                 <p className="text-gray-700 mb-4">
-                  For students seeking more independence, the surrounding Berkeley area offers numerous apartment complexes and shared houses. The Southside 
-                  and Northside neighborhoods are particularly popular among students due to their proximity to campus. Housing costs vary significantly based 
-                  on location, size, and amenities, with the average monthly rent around $2,100.
+                  For upperclassmen, graduate students, and those seeking more independence, universities often provide apartment-style housing either on or near campus, with features like full kitchens, private bedrooms, and parking. Safety and student support are key priorities, with 24/7 campus security, residence life staff, and community programming to promote wellness and connection. Whether at large public institutions like the University of Texas and Texas A&M, or smaller private schools, Texas universities emphasize convenience, community, and student development through their residential offerings.
                 </p>
                 <button 
                   className="mt-2 text-blue-600 font-medium flex items-center cursor-pointer"

@@ -3,7 +3,23 @@ from bs4 import BeautifulSoup
 import requests
 import random
 
-url = "https://www.rentcollegepads.com/off-campus-housing/texas-tech/search"
+CAMPUS_URL_MAP = {
+    "https://www.rentcollegepads.com/off-campus-housing/texas-tech/search": {
+        "campus_name": "Texas Tech University",
+        "county": "Lubbock",
+        "state": "TX"
+    },
+    "https://www.rentcollegepads.com/off-campus-housing/tcu/search": {
+        "campus_name": "Texas Christian University", 
+        "county": "Tarrant",
+        "state": "TX"
+    },
+    "https://www.rentcollegepads.com/off-campus-housing/tamu/search": {
+        "campus_name": "Texas A&M University",
+        "county": "Brazos",
+        "state": "TX"
+    },
+}
 headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 }   
@@ -141,8 +157,9 @@ def scrape_details(detail_page_url):
 
     return details
 
-def scrape_off_campus_housing(url=url):
-    
+
+
+def scrape_off_campus_housing(url):
     try:
         response = requests.get(url, headers=headers)
         response.raise_for_status()  
@@ -152,12 +169,11 @@ def scrape_off_campus_housing(url=url):
 
         apartments = []
         for listing in listings:
-            apartment ={}
+            apartment = {}
 
             name = listing.find('h3', class_='ellipsis')
             if name:
                 apartment['name'] = name.text.strip()
-
             else:
                 apartment['name'] = "No name found"
 
@@ -171,40 +187,27 @@ def scrape_off_campus_housing(url=url):
             detail_url = link['href'] if link else "No link found"
             apartment['link'] = detail_url
             if detail_url:
-                
                 apartment.update(scrape_details(detail_url))
-                # gallery images
-                
-
-            else:
-                apartment['link'] = "No link found"
 
             to_campus = listing.find('div', class_='walkTimeIdeal')
             if to_campus:
-                # Check which icon is present
                 icon = to_campus.find('i', class_='sprite')
                 
                 if icon and 'bg-walk' in icon.get('class', []):
-                    # It's a walking distance
                     time_element = to_campus.find('em')
                     walk_time = time_element.text.strip() if time_element else "Time not specified"
                     
-                    # If walk time is "30+ mins", add shuttle info
                     if walk_time == "30+ mins":
                         apartment['to_campus'] = f"Walk: {walk_time} (Shuttle to Campus)"
                     else:
                         apartment['to_campus'] = f"Walk: {walk_time}"
                         
                 elif icon and 'bg-free_shuttle' in icon.get('class', []):
-                    # It's a shuttle
                     apartment['to_campus'] = "Shuttle to Campus"
                 else:
-                    # Unknown transportation method
                     apartment['to_campus'] = to_campus.text.strip()
             else:
-                # No commute information found
                 apartment['to_campus'] = "No commute information found"
-
 
             thumb = listing.find('img')
             if thumb:
@@ -213,48 +216,69 @@ def scrape_off_campus_housing(url=url):
 
             apartments.append(apartment)
 
-
-        return apartments[:10]
+        return apartments[:15]
     except requests.exceptions.RequestException as e:
-        print(f"An error occurred: {e}")
+        print(f"An error occurred scraping {url}: {e}")
         return []
-  
 
 def scrape_and_update():
     """
-    Main entrypoint: scrape the site and upsert into your DB twice a day.
+    Main entrypoint: scrape all configured sites and upsert into DB.
     """
-    try:
-        campus = Campus.objects.get(name__icontains="Texas Tech")
-    except Campus.DoesNotExist:
-        print("⚠️  Campus 'Texas Tech' not found—skipping scraper run.")
-        return
-
-    listings = scrape_off_campus_housing()
-    for data in listings:
-        name = data.get("name")
-        if not name:
+    total_processed = 0
+    
+    for url, campus_info in CAMPUS_URL_MAP.items():
+        print(f"🔍 Scraping {campus_info['campus_name']}...")
+        
+        try:
+            # Try to find the campus by name
+            campus = Campus.objects.get(name__icontains=campus_info['campus_name'].split()[0])
+        except Campus.DoesNotExist:
+            print(f"⚠️  Campus '{campus_info['campus_name']}' not found—skipping.")
             continue
+        except Campus.MultipleObjectsReturned:
+            # If multiple matches, try exact name match
+            try:
+                campus = Campus.objects.get(name=campus_info['campus_name'])
+            except Campus.DoesNotExist:
+                print(f"⚠️  Campus '{campus_info['campus_name']}' not found—skipping.")
+                continue
 
-        defaults = {
-            'type':         'apartment',
-            "county":       "Lubbock",
-            "state":        "TX",
-            "addressline1": data.get("address", ""),
-            "description":  data.get("description", ""),
-            "commute":      data.get("to_campus", ""),
-            "features":     data.get("all_features", []),
-            "thumbnail":    data.get("thumbnail", None),
-            "lowest_rent": data.get("lowest_rent", None),
-            'image_urls': data.get("image_urls", []),
-            "phone": data.get("phone", ""),
-            "bedrooms": data.get("bedrooms", None),
-            "bathrooms": data.get("bathrooms", None),
-        }
-        apt, created = Housing.objects.update_or_create(
-            campus=campus,
-            name=name,
+        listings = scrape_off_campus_housing(url)
+        campus_processed = 0
+        
+        for data in listings:
+            name = data.get("name")
+            if not name:
+                continue
 
-            defaults=defaults
-        )
-        print(f"{'Created' if created else 'Updated'} apartment: {apt.name}")
+            defaults = {
+                'type': 'apartment',
+                "county": campus_info['county'],
+                "state": campus_info['state'],
+                "addressline1": data.get("address", ""),
+                "description": data.get("description", ""),
+                "commute": data.get("to_campus", ""),
+                "features": data.get("all_features", []),
+                "thumbnail": data.get("thumbnail", None),
+                "lowest_rent": data.get("lowest_rent", None),
+                'image_urls': data.get("image_urls", []),
+                "phone": data.get("phone", ""),
+                "bedrooms": data.get("bedrooms", None),
+                "bathrooms": data.get("bathrooms", None),
+            }
+            
+            apt, created = Housing.objects.update_or_create(
+                campus=campus,
+                name=name,
+                defaults=defaults
+            )
+            
+            action = "Created" if created else "Updated"
+            print(f"  {action} apartment: {apt.name}")
+            campus_processed += 1
+
+        print(f"✅ Processed {campus_processed} apartments for {campus_info['campus_name']}")
+        total_processed += campus_processed
+
+    print(f"🎉 Total apartments processed: {total_processed}")
